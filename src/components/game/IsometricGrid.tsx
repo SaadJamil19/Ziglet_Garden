@@ -321,19 +321,19 @@ const createGrassBlade = (
   if (texture) {
     const blade = new PIXI.Sprite(texture);
     blade.anchor.set(0.5, 1);
-    blade.tint = offsetColor(0x6fd889, toneOffset);
-    blade.alpha = 0.95;
-    blade.scale.set(0.08 + Math.random() * 0.04);
+    blade.tint = offsetColor(0x63c648, toneOffset);
+    blade.alpha = 0.92;
+    blade.scale.set(0.1 + Math.random() * 0.05);
     blade.x = x;
     blade.y = y;
-    blade.rotation = ((Math.random() * 8 - 4) * Math.PI) / 180;
+    blade.rotation = ((Math.random() * 10 - 5) * Math.PI) / 180;
     return blade;
   }
 
   const blade = new PIXI.Graphics();
   const height = 10 + Math.random() * 16;
   const width = 3 + Math.random() * 4;
-  const color = offsetColor(0x6fd889, toneOffset);
+  const color = offsetColor(0x63c648, toneOffset);
   blade.beginFill(color, 1);
   blade.moveTo(0, 0);
   blade.lineTo(-width * 0.5, -height);
@@ -389,10 +389,16 @@ export const IsometricGrid = ({
   const wateringAudioRef = useRef<HTMLAudioElement | null>(null);
   const grassGrowAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const addGrassBladesToTile = (tile: GrassTileData, count: number) => {
+const addGrassBladesToTile = (tile: GrassTileData, count: number) => {
     if (!grassLayerRef.current) return;
-    for (let i = 0; i < count; i += 1) {
-      const { dx, dy } = randomPointInDiamond(tileWidth, tileHeight);
+    const clumps = Math.max(4, Math.round(count / 3));
+    for (let c = 0; c < clumps; c += 1) {
+      const { dx: cx, dy: cy } = randomPointInDiamond(tileWidth, tileHeight);
+      const bladesInClump = 2 + Math.floor(Math.random() * 3);
+      for (let i = 0; i < bladesInClump; i += 1) {
+        const jitterX = (Math.random() - 0.5) * 34;
+        const jitterY = (Math.random() - 0.5) * 22;
+        const { dx, dy } = { dx: cx + jitterX, dy: cy + jitterY };
       const blade = createGrassBlade(
         tile.baseX + dx,
         tile.baseY + dy,
@@ -420,6 +426,7 @@ export const IsometricGrid = ({
         delay: Math.random() * 1.5,
       });
       windTweensRef.current.push(tween);
+      }
     }
     grassLayerRef.current.sortChildren();
   };
@@ -437,7 +444,7 @@ export const IsometricGrid = ({
           tile.isWatered = true;
           tile.target = 1;
           tile.growth = isNewFill ? 0.2 : 1;
-          addGrassBladesToTile(tile, 32 + Math.floor(Math.random() * 12));
+          addGrassBladesToTile(tile, 20 + Math.floor(Math.random() * 8));
         }
       }
     }
@@ -479,7 +486,7 @@ export const IsometricGrid = ({
       wateringAudioRef.current.currentTime = 0;
       void wateringAudioRef.current.play();
     }
-    boostArea(row, col, 18 + Math.floor(Math.random() * 6));
+    boostArea(row, col, 16 + Math.floor(Math.random() * 6));
     const tile = tilesByKeyRef.current.get(`${row},${col}`);
     if (tile) {
       tile.isWatered = true;
@@ -949,7 +956,7 @@ export const IsometricGrid = ({
             tile.growth + 0.03 * Number(delta)
           );
         }
-        const growthScale = 0.35 + tile.growth * 0.65;
+        const growthScale = 0.25 + tile.growth * 0.75;
         for (const blade of tile.blades) {
           const sprite = blade.sprite as PIXI.Sprite;
           sprite.scale.set(
