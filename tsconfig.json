@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",
+<<<<<<< HEAD
     "lib": ["es2020", "dom"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -17,3 +18,22 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]
 }
+=======
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts"
+  ]
+}
+>>>>>>> 35139651790e54b37ce588db8f10a1a12b5e97a8

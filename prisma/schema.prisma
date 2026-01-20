@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------
+// 1. CORE AUTH & USER
+// ------------------------------------------------------
+
+model User {
+  id            String   @id @default(uuid())
+  zig_address   String   @unique
+  created_at    DateTime @default(now())
+  last_login_at DateTime @default(now())
+
+  // Relations
+  daily_states    UserDailyState[]
+  reward_events   RewardEvent[]
+  task_logs       UserTaskLog[]
+  streak          UserStreak?
+  garden_state    GardenState?
+  faucet_requests FaucetRequest[]
+  external_actions ExternalAction[]
+
+  @@map("users")
+}
+
+model WalletNonce {
+  zig_address String   @unique
+  nonce       String
+  expires_at  DateTime
+
+  @@map("wallet_nonces")
+}
+
+// ------------------------------------------------------
+// 2. DAILY ENGAGEMENT ENGINE
+// ------------------------------------------------------
+
+model UserDailyState {
+  id                   String   @id @default(uuid())
+  user_id              String
+  garden_day           String
+  visited_at           DateTime @default(now())
+  login_reward_claimed Boolean  @default(false)
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, garden_day])
+  @@map("user_daily_state")
+}
+
+model UserStreak {
+  user_id         String @id
+  current_streak  Int    @default(0)
+  longest_streak  Int    @default(0)
+  last_active_day String
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("user_streaks")
+}
+
+model GardenState {
+  user_id         String @id
+  growth_points   Int    @default(0)
+  last_growth_day String
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("garden_state")
+}
+
+// ------------------------------------------------------
+// 3. REWARDS & FAUCET
+// ------------------------------------------------------
+
+// Enums removed for SQLite compatibility. Use Strings.
+// RewardSource: LOGIN, TASK, STREAK, MILESTONE
+// RewardType: ZIG, FAUCET
+
+model RewardEvent {
+  id          String       @id @default(uuid())
+  user_id     String
+  source      String       // Enum
+  reward_type String       // Enum
+  amount      Float
+  garden_day  String
+  created_at  DateTime     @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+  faucet_request FaucetRequest?
+
+  @@map("reward_events")
+  @@index([user_id])
+  @@index([created_at])
+}
+
+// FaucetStatus: PENDING, SENT, FAILED
+
+model FaucetRequest {
+  id              String       @id @default(uuid())
+  user_id         String
+  reward_event_id String       @unique
+  status          String       @default("PENDING") // Enum
+  tx_hash         String?
+  created_at      DateTime     @default(now())
+
+  user         User        @relation(fields: [user_id], references: [id])
+  reward_event RewardEvent @relation(fields: [reward_event_id], references: [id])
+
+  @@map("faucet_requests")
+}
+
+// ------------------------------------------------------
+// 4. TASKS & ACTIONS
+// ------------------------------------------------------
+
+model Task {
+  id            String     @id @default(uuid())
+  key           String     @unique
+  max_per_day   Int        @default(1)
+  reward_amount Float
+  reward_type   String     // Enum
+
+  logs UserTaskLog[]
+
+  @@map("tasks")
+}
+
+model UserTaskLog {
+  id         String @id @default(uuid())
+  user_id    String
+  task_id    String
+  garden_day String
+  count      Int    @default(0)
+
+  user User @relation(fields: [user_id], references: [id])
+  task Task @relation(fields: [task_id], references: [id])
+
+  @@unique([user_id, task_id, garden_day])
+  @@map("user_task_logs")
+}
+
+// ActionType: SWAP
+
+model ExternalAction {
+  id          String     @id @default(uuid())
+  user_id     String
+  action_type String       // Enum
+  tx_hash     String
+  verified    Boolean    @default(false)
+  garden_day  String
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([tx_hash])
+  @@map("external_actions")
+}
